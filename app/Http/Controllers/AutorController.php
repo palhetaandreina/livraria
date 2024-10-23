@@ -12,9 +12,15 @@ class AutorController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
-        $autores = Autor::all();
+        $query = Autor::query();
+
+        if ($request->has('nome')) {
+            $query->where('nome', 'like', '%' . $request->input('nome') . '%');
+        }
+
+        $autores = $query->paginate($request->input('perPage', 50));
 
         return view('autores.index', compact('autores'));
     }
@@ -26,7 +32,7 @@ class AutorController extends Controller
      */
     public function create()
     {
-        //
+        return view('autores.create');
     }
 
     /**
@@ -37,7 +43,15 @@ class AutorController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $validated = $request->validate([
+            'nome' => 'required|string|max:255',
+            'biografia' => 'nullable|string',
+            'data_nascimento' => 'nullable|date',
+        ]);
+
+        Autor::create($validated);
+
+        return redirect()->route('autores.index')->with('success', 'Autor adicionado com sucesso!');
     }
 
     /**
@@ -46,9 +60,10 @@ class AutorController extends Controller
      * @param  \App\Models\Autor  $autor
      * @return \Illuminate\Http\Response
      */
-    public function show(Autor $autor)
+    public function show(Autor $id)
     {
-        //
+        $autor = Autor::findOrFail($id);
+        return view('autores.show', compact('autor'));
     }
 
     /**
@@ -57,9 +72,10 @@ class AutorController extends Controller
      * @param  \App\Models\Autor  $autor
      * @return \Illuminate\Http\Response
      */
-    public function edit(Autor $autor)
+    public function edit($id)
     {
-        //
+        $autor = Autor::findOrFail($id);
+        return view('autores.edit', compact('autor'));
     }
 
     /**
@@ -69,9 +85,21 @@ class AutorController extends Controller
      * @param  \App\Models\Autor  $autor
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, Autor $autor)
+    public function update(Request $request, $id)
     {
-        return redirect()->route('autores.index')->with('sucess', 'autor atualizado com sucesso');
+        // Validação dos dados
+        $validated = $request->validate([
+            'nome' => 'required|string|max:255',
+            'biografia' => 'nullable|string',
+            'data_nascimento' => 'nullable|date',
+        ]);
+
+        // Atualizar o autor
+        $autor = Autor::findOrFail($id);
+        $autor->update($validated);
+
+        // Redirecionar com mensagem de sucesso
+        return redirect()->route('autores.index')->with('success', 'Autor atualizado com sucesso!');
     }
 
     /**
@@ -80,8 +108,12 @@ class AutorController extends Controller
      * @param  \App\Models\Autor  $autor
      * @return \Illuminate\Http\Response
      */
-    public function destroy(Autor $autor)
+    public function destroy($id)
     {
-        //
+        $autor = Autor::findOrFail($id);
+        $autor->delete();
+
+        // Redirecionar com mensagem de sucesso
+        return redirect()->route('autores.index')->with('success', 'Autor excluído com sucesso!');
     }
 }

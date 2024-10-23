@@ -23,9 +23,8 @@ Route::get('/', function () {
 });
 
 Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
-Route::resource('autores', AutorController::class);
-Route::resource('autor_livro', [AutorLivroController::class]);
-Route::resource('categoria', [CategoriaController::class]);
-Route::resource('livro', [LivroController::class]);
+Route::resource('autores', [AutorController::class]);
+Route::resource('categorias', [CategoriaController::class]);
+Route::resource('livros', [LivroController::class]);
 
 

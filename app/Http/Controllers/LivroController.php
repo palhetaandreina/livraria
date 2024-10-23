@@ -3,101 +3,95 @@
 namespace App\Http\Controllers;
 
 use App\Models\Livro;
+use App\Models\Categoria;
 use Illuminate\Http\Request;
 
 class LivroController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function index()
+    public function index(Request $request)
     {
-        $livros = Livro::all();
-        return  view('livros.index', compact('livros'));
+        $titulo = $request->get('titulo'); // Filtro opcional por título
+        $perPage = $request->get('perPage', 10); // Quantidade de itens por página
+
+        $livros = Livro::with('categoria')
+            ->filtrarPorTitulo($titulo)
+            ->paginate($perPage);
+
+        return view('livros.index', compact('livros'));
     }
 
     /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
+     * Exibir o formulário para criar um novo livro.
      */
     public function create()
     {
-        return view('livros.create');
+        $categorias = Categoria::all(); // Buscar todas as categorias para o dropdown
+        return view('livros.create', compact('categorias'));
     }
 
     /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * Armazenar um novo livro no banco de dados.
      */
     public function store(Request $request)
     {
-        $livro = new Livro;
-        $livro ->  titulo = $request -> titulo;
-        $livro ->  autor = $request -> autor;
-        $livro ->  categoria = $request -> categoria;
-        $livro -> save();
+        $request->validate([
+            'titulo' => 'required|string|max:255',
+            'descricao' => 'nullable|string',
+            'data_publicacao' => 'required|date',
+            'categoria_id' => 'required|exists:categorias,id', // Validar existência da categoria
+        ]);
 
-        return redirect()->route('autores.index');
+        Livro::create($request->all()); // Criar livro com os dados validados
+
+        return redirect()->route('livros.index')->with('success', 'Livro criado com sucesso!');
     }
 
     /**
-     * Display the specified resource.
-     *
-     * @param  \App\Models\Livro  $livro
-     * @return \Illuminate\Http\Response
+     * Exibir um livro específico.
      */
     public function show($id)
     {
-        $livro = Livro::findOrFaill($id);
-        return view('livros.show', compact('livros'));
+        $livro = Livro::with('categoria')->findOrFail($id); // Carregar livro junto com a categoria
+        return view('livros.show', compact('livro'));
     }
 
     /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  \App\Models\Livro  $livro
-     * @return \Illuminate\Http\Response
+     * Exibir o formulário para editar um livro existente.
      */
-    public function edit( $id)
+    public function edit($id)
     {
-        $livro = Livro::findOrFaill($id);
-        return view('livros.show', compact('livros'));
+        $livro = Livro::findOrFail($id); // Buscar livro por ID
+        $categorias = Categoria::all(); // Buscar todas as categorias para o dropdown
+
+        return view('livros.edit', compact('livro', 'categorias'));
     }
 
     /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\Livro  $livro
-     * @return \Illuminate\Http\Response
+     * Atualizar um livro existente no banco de dados.
      */
     public function update(Request $request, $id)
     {
-        $livro = Livro::findOrFail($id);
-        $livro -> titulo = $request -> titulo;
-        $livro -> autor = $request -> autor;
-        $livro -> categoria = $request -> categoria;
-        $livro -> save();
+        $request->validate([
+            'titulo' => 'required|string|max:255',
+            'descricao' => 'nullable|string',
+            'data_publicacao' => 'required|date',
+            'categoria_id' => 'required|exists:categorias,id', // Validar existência da categoria
+        ]);
 
-        return redirect()->route('livros.index');
+        $livro = Livro::findOrFail($id); // Buscar livro por ID
+        $livro->update($request->all()); // Atualizar com os dados validados
+
+        return redirect()->route('livros.index')->with('success', 'Livro atualizado com sucesso!');
     }
 
     /**
-     * Remove the specified resource from storage.
-     *
-     * @param  \App\Models\Livro  $livro
-     * @return \Illuminate\Http\Response
+     * Excluir um livro do banco de dados.
      */
     public function destroy($id)
     {
-        $livro = livro::findOrFail($id);
-        $livro -> delete();
+        $livro = Livro::findOrFail($id); // Buscar livro por ID
+        $livro->delete(); // Excluir livro
 
-        return redirect() -> route('livros.index');
+        return redirect()->route('livros.index')->with('success', 'Livro excluído com sucesso!');
     }
 }
